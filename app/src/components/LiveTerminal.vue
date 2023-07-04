@@ -150,6 +150,23 @@ export default {
       else if(qualifier === "infected" && this.last_message_i.length > 0){
         this.cli_text_infected = this.last_message_i[this.last_message_i.length-1]
       }
+    },
+    generateScripts() {
+      this.generateScript("healthy", this.clean_lines, "healthy_sandbox_script.sh");
+      this.generateScript("infected", this.infected_lines, "infected_sandbox_script.sh");
+    },
+    generateScript(sandboxType, commands fileName) {
+      const script = [];
+      script.push('# ${sandboxType} Sandbox Commands');
+      script.push(...commands);
+      const scriptContent = script.join("\n");
+      const blob = new Blob([scriptContent], {type: "text/plain"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+    }
     }
   },
   beforeUnmount: function() {
