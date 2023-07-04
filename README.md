@@ -24,7 +24,7 @@ To add a [mongo DB](https://www.mongodb.com/), a .env file in this directory mus
 ```
 DB_PORT= "27017"
 HOST_BITNESS= 64
-HOST="mongodb+srv://"
+DB_HOST="mongodb+srv://"
 DB= "DB?"
 ```
 
