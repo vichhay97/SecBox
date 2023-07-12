@@ -48,8 +48,10 @@
             </v-col>
             </v-row>
           </v-container>
+          <v-btn color="primary" class="ma-2" @click="downloadScript('combined')">Download Combined Script</v-btn>
           <v-btn color="primary" class="ma-2" @click="downloadScript('infected')">Download Infected Script</v-btn>
           <v-btn color="primary" class="ma-2" @click="downloadScript('clean')">Download Clean Script</v-btn>
+
 </template>
 
 <script>
@@ -78,7 +80,11 @@ export default {
     last_message_h:[],
     last_message_i:[],
     infected_commands:[],
-    clean_commands:[]
+    clean_commands:[],
+    combined_commands: [],
+    infectedScript: '',
+    cleanScript: '',
+    combinedScript: ''
       }),
   created() {
    let ref = this
@@ -88,21 +94,35 @@ export default {
   },
 
   methods:{
-    generateSSHScript: function(infected = true) {
-    
-    let commands = infected ? this.infected_commands : this.clean_commands;
-    let script = "#!/bin/sh\n\n";
-    
-    for (let command of commands) {
-      script += `${command}\n`;
-    }
-    
-    return infected ? (this.infectedScript = script) : (this.cleanScript = script);
-    },
-    downloadScript: function(scriptType) {
-    this.generateSSHScript(scriptType === 'infected'); // Generate the script first
+    generateSHScript: function(scriptType) {
+      let commands;
+      let script = "";
 
-    const scriptContent = scriptType === 'infected' ? this.infectedScript : this.cleanScript;
+      if (scriptType === 'combined') {
+      commands = this.combined_commands;
+      this.combinedScript = script;
+      } else {
+        commands = scriptType === 'infected' ? this.infected_commands : this.clean_commands;
+        }
+        // Determine the first command timestamp
+        let firstCommandTimestamp = commands.length > 0 ? commands[0].timestamp : 0;
+        for (let commandObj of commands) {
+          let relativeTimestamp = commandObj.timestamp - firstCommandTimestamp;
+          script += `# Relative Timestamp: ${relativeTimestamp} ms\n${commandObj.command}\n`;
+          }
+
+  if (scriptType === 'infected') {
+    this.infectedScript = script;
+  } else if (scriptType === 'clean') {
+    this.cleanScript = script;
+  } else if (scriptType === 'combined') {
+    this.combinedScript = script;
+  }
+},
+    downloadScript: function(scriptType) {
+    this.generateSHScript(scriptType);
+
+    const scriptContent = scriptType === 'infected' ? this.infectedScript : (scriptType === 'clean' ? this.cleanScript : this.combinedScript);
     const scriptName = scriptType + 'Script.sh';
     
     let element = document.createElement('a');
@@ -122,12 +142,16 @@ export default {
     this.socket.emit('my event', { data: message });
     },
   onEnter:function(){
+    // Gather current Timestamp
+    const now = Date.now()
+
     if (this.combined_cli && (this.can_send_cmd_healthy && this.can_send_cmd_infected)){
       this.can_send_cmd_healthy = false;
       this.can_send_cmd_infected = false;
       this.last_messages.push(this.cli_text)
-      this.infected_commands.push(this.cli_text);
-      this.clean_commands.push(this.cli_text);
+      this.combined_commands.push({command: this.cli_text, timestamp: now});
+      console.log('Combined command:', this.cli_text);
+      console.log('Combined commands:', this.combined_commands);
       this.socket.emit('cli command', { "room":this.current_id, "healthy_cmd": this.cli_text, "infected_cmd": this.cli_text});
               
       this.$refs.CLI_text_field.reset("");
@@ -137,7 +161,9 @@ export default {
         if (this.cli_text_clean !== "" && this.cli_text_clean !== " "){
           this.last_message_h.push(this.cli_text_clean)
           this.clean_lines.push(this.cli_text_clean);
-          this.clean_commands.push(this.cli_text_clean);
+          this.clean_commands.push({command: this.cli_text_clean, timestamp: now});
+          console.log('Clean command:', this.cli_text_clean);
+          console.log('Clean commands:', this.clean_commands);
           this.socket.emit('cli command', { "room":this.current_id, "healthy_cmd": this.cli_text_clean, "infected_cmd": ""});
         }
         this.$refs.CLI_text_field_clean.reset("");
@@ -146,7 +172,9 @@ export default {
         if (this.cli_text_infected !== "" && this.cli_text_infected !== " "){
           this.last_message_i.push(this.cli_text_infected)
           this.infected_lines.push(this.cli_text_infected)
-          this.infected_commands.push(this.cli_text_infected)
+          this.infected_commands.push({command: this.cli_text_infected, timestamp: now})
+          console.log('Infected command:', this.cli_text_infected);
+          console.log('Infected commands:', this.infected_commands);
           this.socket.emit('cli command', { "room":this.current_id, "healthy_cmd": "", "infected_cmd": this.cli_text_infected});
                   
           this.$refs.CLI_text_field_infected.reset("");
@@ -185,7 +213,7 @@ export default {
       this.cli_text_infected = this.last_message_i[this.last_message_i.length-1]
     }
   }
-  },
+    },
   beforeUnmount: function() {
     this.socket.emit("leave room", {"room": this.current_id})
   }
