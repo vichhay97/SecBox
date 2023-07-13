@@ -51,6 +51,9 @@
           <v-btn color="primary" class="ma-2" @click="downloadScript('combined')">Download Combined Script</v-btn>
           <v-btn color="primary" class="ma-2" @click="downloadScript('infected')">Download Infected Script</v-btn>
           <v-btn color="primary" class="ma-2" @click="downloadScript('clean')">Download Clean Script</v-btn>
+          <v-btn color="primary" class="ma-2" @click="uploadScript('combined')">Upload Combined Script</v-btn>
+          <v-btn color="primary" class="ma-2" @click="uploadScript('infected')">Upload Infected Script</v-btn>
+          <v-btn color="primary" class="ma-2" @click="uploadScript('clean')">Upload Clean Script</v-btn>
 
 </template>
 
@@ -94,36 +97,39 @@ export default {
   },
 
   methods:{
-    generateSHScript: function(scriptType) {
+    generateScript: function(scriptType) {
       let commands;
-      let script = "";
-
+      let script = '';
+      
       if (scriptType === 'combined') {
-      commands = this.combined_commands;
-      this.combinedScript = script;
-      } else {
-        commands = scriptType === 'infected' ? this.infected_commands : this.clean_commands;
-        }
-        // Determine the first command timestamp
-        let firstCommandTimestamp = commands.length > 0 ? commands[0].timestamp : 0;
-        for (let commandObj of commands) {
-          let relativeTimestamp = commandObj.timestamp - firstCommandTimestamp;
-          script += `# Relative Timestamp: ${relativeTimestamp} ms\n${commandObj.command}\n`;
+        commands = this.combined_commands;
+        this.combinedScript = script;
+        } else {
+          commands = scriptType === 'infected' ? this.infected_commands : this.clean_commands;
           }
-
-  if (scriptType === 'infected') {
-    this.infectedScript = script;
-  } else if (scriptType === 'clean') {
-    this.cleanScript = script;
-  } else if (scriptType === 'combined') {
-    this.combinedScript = script;
-  }
-},
+          
+      // Determine the first command timestamp
+      let firstCommandTimestamp = commands.length > 0 ? commands[0].timestamp : 0;
+      for (let commandObj of commands) {
+        let relativeTimestamp = commandObj.timestamp - firstCommandTimestamp;
+        script += `${commandObj.command} # Relative Timestamp: ${relativeTimestamp} ms\n`;
+        }
+        
+        if (scriptType === 'infected') {
+          this.infectedScript = script;
+          } 
+        else if (scriptType === 'clean') {
+          this.cleanScript = script;
+          } 
+        else if (scriptType === 'combined') {
+          this.combinedScript = script;
+          }
+  },
     downloadScript: function(scriptType) {
-    this.generateSHScript(scriptType);
+    this.generateScript(scriptType);
 
     const scriptContent = scriptType === 'infected' ? this.infectedScript : (scriptType === 'clean' ? this.cleanScript : this.combinedScript);
-    const scriptName = scriptType + 'Script.sh';
+    const scriptName = scriptType + 'Script.txt';
     
     let element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(scriptContent));
@@ -135,6 +141,52 @@ export default {
     element.click();
 
     document.body.removeChild(element);
+  },
+  uploadScript: function(scriptType) {
+    const inputElement = document.createElement('input');
+    inputElement.type = 'file';
+    inputElement.accept = '.txt';
+    inputElement.onchange = (event) => {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        const lines = reader.result.split('\n').filter(line => line.trim().length > 0);
+        console.log(lines);
+        const commands = lines.map(line => {
+          const [command, timestampComment] = line.split('#');
+          const timestamp = Number(timestampComment.replace('Relative Timestamp:', '').replace('ms', '').trim());
+          return { command: command.trim(), timestamp };
+        });
+
+        // Set settings according to script type
+        this.can_send_cmd_healthy = scriptType === 'combined' || scriptType === 'clean';
+        this.can_send_cmd_infected = scriptType === 'combined' || scriptType === 'infected';
+
+        this.runScript(commands);
+      };
+      reader.readAsText(file);
+    };
+    inputElement.click();
+  },
+  runScript: async function(commands) {
+    for (let i = 0; i < commands.length; i++) {
+      const command = commands[i].command;
+      const delay = i === 0 ? 0 : commands[i].timestamp - commands[i-1].timestamp;
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Depending on the settings, use the appropriate CLI text field and send the command
+      if (this.combined_cli) {
+        this.cli_text = command;
+        this.onEnter();
+      } else if (this.can_send_cmd_healthy) {
+        this.cli_text_clean = command;
+        this.onEnter();
+      } else if (this.can_send_cmd_infected) {
+        this.cli_text_infected = command;
+        this.onEnter();
+      }
+    }
   },
   sendMessage: function(message){
     //sending to server
