@@ -55,7 +55,11 @@ class PerformanceManager(DataManager):
                 cpu_percentage_trimmed = cpu_percentage_trimmed[-60:]
             else:
                 length_dummy_data = 60 - len(cpu_percentage_trimmed)
-                dummy_data = length_dummy_data * [cpu_percentage_trimmed[0]]
+                if cpu_percentage_trimmed:
+                    dummy_data = length_dummy_data * [cpu_percentage_trimmed[0]]
+                else:
+                    print(f"CPU data still buffering for sandbox_id: {sandbox_id} with status: {infected_status}")
+                    return
                 cpu_percentage_trimmed = dummy_data + cpu_percentage_trimmed
 
             times = []
@@ -156,16 +160,19 @@ class PerformanceManager(DataManager):
     def extract_cpu_percentages(self, sandbox_id, infected_status, data):
         current_ts = parser.parse(data["stats"]["read"])
         if data:
-            system_delta = data["stats"]['cpu_stats']['system_cpu_usage'] - data["stats"]['precpu_stats']['system_cpu_usage']
-            cpu_delta = data["stats"]['cpu_stats']['cpu_usage']['total_usage'] - data["stats"]['precpu_stats']['cpu_usage']['total_usage']
-            no_cores = data["stats"]['cpu_stats']['online_cpus']
+            try:
+                system_delta = data["stats"]['cpu_stats']['system_cpu_usage'] - data["stats"]['precpu_stats']['system_cpu_usage']
+                cpu_delta = data["stats"]['cpu_stats']['cpu_usage']['total_usage'] - data["stats"]['precpu_stats']['cpu_usage']['total_usage']
+                no_cores = data["stats"]['cpu_stats']['online_cpus']
 
-            if system_delta:
-                percentage = (cpu_delta/system_delta) * 100 * no_cores
-            else:
-                percentage = 0
+                if system_delta:
+                    percentage = (cpu_delta/system_delta) * 100 * no_cores
+                else:
+                    percentage = 0
 
-            self.cpu_percentages[sandbox_id][infected_status]["graph"].append({"timestamp": current_ts.strftime("%m/%d/%Y, %H:%M:%S.%f%Z"), "cpu_percentage": percentage})
+                self.cpu_percentages[sandbox_id][infected_status]["graph"].append({"timestamp": current_ts.strftime("%m/%d/%Y, %H:%M:%S.%f%Z"), "cpu_percentage": percentage})
+            except KeyError as e:
+                print(f"KeyError: {e} is missing in the stats data for sandbox_id: {sandbox_id} and infected_status: {infected_status}")
 
 
     def extract_packet_count(self, sandbox_id, infected_status, data):
