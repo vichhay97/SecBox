@@ -151,7 +151,6 @@ export default {
       const reader = new FileReader();
       reader.onload = () => {
         const lines = reader.result.split('\n').filter(line => line.trim().length > 0);
-        console.log(lines);
         const commands = lines.map(line => {
           const [command, timestampComment] = line.split('#');
           const timestamp = Number(timestampComment.replace('Relative Timestamp:', '').replace('ms', '').trim());
@@ -202,8 +201,6 @@ export default {
       this.can_send_cmd_infected = false;
       this.last_messages.push(this.cli_text)
       this.combined_commands.push({command: this.cli_text, timestamp: now});
-      console.log('Combined command:', this.cli_text);
-      console.log('Combined commands:', this.combined_commands);
       this.socket.emit('cli command', { "room":this.current_id, "healthy_cmd": this.cli_text, "infected_cmd": this.cli_text});
               
       this.$refs.CLI_text_field.reset("");
@@ -214,8 +211,6 @@ export default {
           this.last_message_h.push(this.cli_text_clean)
           this.clean_lines.push(this.cli_text_clean);
           this.clean_commands.push({command: this.cli_text_clean, timestamp: now});
-          console.log('Clean command:', this.cli_text_clean);
-          console.log('Clean commands:', this.clean_commands);
           this.socket.emit('cli command', { "room":this.current_id, "healthy_cmd": this.cli_text_clean, "infected_cmd": ""});
         }
         this.$refs.CLI_text_field_clean.reset("");
@@ -225,8 +220,6 @@ export default {
           this.last_message_i.push(this.cli_text_infected)
           this.infected_lines.push(this.cli_text_infected)
           this.infected_commands.push({command: this.cli_text_infected, timestamp: now})
-          console.log('Infected command:', this.cli_text_infected);
-          console.log('Infected commands:', this.infected_commands);
           this.socket.emit('cli command', { "room":this.current_id, "healthy_cmd": "", "infected_cmd": this.cli_text_infected});
                   
           this.$refs.CLI_text_field_infected.reset("");

@@ -333,7 +333,13 @@ def handle_ready(json):
 
 @socketio.on('stats', namespace='/performance')
 def handle_stats(data):
-    performance_manager.handle_message(json.loads(data))
+    try:
+        stats = json.loads(data)
+        read_timestamp = stats["stats"]["read"]
+        system_cpu_usage = stats["stats"]["cpu_stats"]["system_cpu_usage"]
+        performance_manager.handle_message(stats)
+    except Exception as e:
+        print("Error processing performance data:", e)
 
 
 @socketio.on('cmdOut', namespace='/cmd')
