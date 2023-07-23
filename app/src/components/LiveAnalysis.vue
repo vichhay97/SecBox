@@ -33,8 +33,8 @@
 
 
         <v-card class="pa-0 bg-deep-purple-lighten-3">
-          <LiveTerminal :combined_cli="this.combined_cli" :current_id="this.$route.params.id"
-                        :socket="this.socket"></LiveTerminal>
+          <LiveTerminal :combined_cli="this.combined_cli" @update-combined-cli="updateCombinedCli" 
+          :current_id="this.$route.params.id" :socket="this.socket"></LiveTerminal>
           <v-col align="center">
             <v-btn
                 icon
@@ -129,7 +129,10 @@ export default {
     stop: function () {
       this.socket.emit("stop request", {"ID":this.$route.params.id})
       router.push({ path: '/' })
-    }
+    },
+    updateCombinedCli(state) {
+    this.combined_cli = state;
+  }
   },
 
 }
