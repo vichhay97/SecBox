@@ -49,13 +49,15 @@
             </v-row>
             <v-row class="ma-2">
               <v-col cols="12" md="6">
-                <v-btn color="primary" @click="downloadScript()">
-                Download Script
+                <v-btn block large color="deep-purple accent-4" dark @click="downloadScript()">
+                  <v-icon left>mdi-download</v-icon>
+                  Generate and Download Script
                 </v-btn>
               </v-col>
               <v-col cols="12" md="6">
-                <v-btn color="secondary" @click="uploadScript()">
-                Upload and Run Script
+                <v-btn block large color="deep-orange accent-4" dark @click="uploadScript()">
+                  <v-icon left>mdi-upload</v-icon>
+                  Upload and Run Script
                 </v-btn>
               </v-col>
             </v-row>
