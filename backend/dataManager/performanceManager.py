@@ -5,9 +5,13 @@ from dateutil import parser
 from datetime import datetime
 import json
 from backend import models
+import os
+import csv
 
 
 class PerformanceManager(DataManager):
+    script_dir = os.path.dirname(__file__)
+
     def __init__(self, socketio, db):
         super().__init__(socketio, db)
         self.cpu_percentages = {}
@@ -73,7 +77,6 @@ class PerformanceManager(DataManager):
                     "percentages": percentages
                 }
             }
-
             self.socketio.emit("cpu_percentages_graph",
                                response_cpu_percentage,
                                namespace='/live', room=str(sandbox_id))
@@ -179,3 +182,51 @@ class PerformanceManager(DataManager):
 
     def batch_process():
         pass
+
+    def create_csv(self, data):
+        try:
+            stats = json.loads(data)
+            read_timestamp = stats["stats"]["read"]
+            system_cpu_usage = stats["stats"]["cpu_stats"]["system_cpu_usage"]
+            cpu_percentage = self.calculate_cpu_percentage(stats["stats"])
+            ram_usage = self.calculate_ram_usage(stats["stats"])
+            sandbox_id = stats["ID"]
+            infection_status = stats["infectedStatus"]
+        except Exception as e:
+            print("Error processing performance data in create_csv:", e)
+            return
+
+        csv_dir = os.path.join(self.script_dir, 'CSVs')
+        if not os.path.exists(csv_dir):
+            os.makedirs(csv_dir)
+        filename = os.path.join(csv_dir, f'{sandbox_id}_performance_data.csv')
+
+        file_exists = os.path.isfile(filename)
+
+        with open(filename, 'a') as csvfile:
+            headers = ['ID', 'Infection Status', 'Timestamp', 'System CPU Usage', 'CPU Percentage', 'RAM Usage']
+            writer = csv.DictWriter(csvfile, delimiter=',', lineterminator='\n', fieldnames=headers)
+
+            if not file_exists:
+                writer.writeheader()
+
+            writer.writerow({'ID': sandbox_id, 'Infection Status': infection_status, 'Timestamp': read_timestamp, 'System CPU Usage': system_cpu_usage, 
+                            'CPU Percentage': cpu_percentage, 'RAM Usage': ram_usage})
+
+    def calculate_cpu_percentage(self, stats):
+        cpu_usage_docker = stats['cpu_stats']['cpu_usage']['total_usage']
+        cpu_usage_system = stats['cpu_stats']['system_cpu_usage']
+        online_cpus = stats['cpu_stats']['online_cpus']
+
+        cpu_percentage = (cpu_usage_docker / cpu_usage_system) * online_cpus * 100
+
+        return cpu_percentage
+
+    def calculate_ram_usage(self, stats):
+        memory_usage = stats['memory_stats']['usage']
+        memory_limit = stats['memory_stats']['limit']
+
+        ram_percentage = (memory_usage / memory_limit) * 100
+
+        return ram_percentage
+    

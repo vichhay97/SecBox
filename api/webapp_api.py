@@ -338,6 +338,7 @@ def handle_stats(data):
         read_timestamp = stats["stats"]["read"]
         system_cpu_usage = stats["stats"]["cpu_stats"]["system_cpu_usage"]
         performance_manager.handle_message(stats)
+        performance_manager.create_csv(data)
     except Exception as e:
         print("Error processing performance data:", e)
 
