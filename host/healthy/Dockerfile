@@ -6,3 +6,6 @@ FROM $os_image
 #setup python and pip
 RUN apt update
 RUN apt install -y wget
+
+# Copy zip file into container
+COPY ./home_content /home

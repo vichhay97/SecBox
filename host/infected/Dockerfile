@@ -4,8 +4,9 @@ ARG os_image
 ARG malware_hash=""
 FROM $os_image
 
-#setup wget and 
-RUN apt-get update 
-RUN apt-get install -y wget 
-RUN apt-get install -y p7zip-full p7zip-rar
-RUN apt update && apt install -y wget
+# setup wget and unzip, and p7zip
+RUN apt-get update && \
+    apt-get install -y wget p7zip-full p7zip-rar
+
+# copy zip file
+COPY ./home_content /home
