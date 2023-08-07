@@ -25,7 +25,11 @@ All dependencies required for the backend can be installed in
 ``` 
 with `pip install -r requirements.txt`.
 
-api.env needs to be loaded before running the backend with `python3 webapp_api.py`.
+api.env needs to be loaded before running the backend with.
+
+```
+python3 webapp_api.py
+```
 
 ## Host Setup
 In order to set up the host on a machine, run:
