@@ -16,6 +16,8 @@ and run `npm install`.
 
 Loading the app.env file is necessary before execution.
 
+The frontend can be deployed locally via the command `npm run serve`.
+
 ## Backend Setup
 The backend requires [python 3.9](https://www.python.org/downloads/release/python-390/) and [pip](https://pip.pypa.io/en/stable/installation/).
 All dependencies required for the backend can be installed in
